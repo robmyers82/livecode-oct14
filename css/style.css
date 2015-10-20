@@ -1,3 +1,8 @@
 .btn-rachael {
 	background: #F0F;
 }
+
+.main-chat-display,
+.main-chat-register {
+	display: none;
+}
