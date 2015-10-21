@@ -6,3 +6,7 @@
 .main-chat-register {
 	display: none;
 }
+
+.main-chat-login {
+	background: #FF0;
+}

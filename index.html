@@ -16,6 +16,7 @@
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 <script src="https://cdn.firebase.com/js/client/2.3.1/firebase.js"></script>
+<script src="sha256.js"></script>
 
 </head>
 
@@ -58,6 +59,10 @@
           <input type="text" class="btn-block" id="register-password" value="" placeholder="Your password" />
         </div>
         <div class="col-sm-12">
+          <label>Photo</label>
+          <input type="file" id="photo" />
+        </div>
+        <div class="col-sm-12">
           <button type="button" class="btn btn-block btn-primary" id="register-button">Register</button>
         </div>
         <div class="col-sm-12">
@@ -68,7 +73,7 @@
   </div>
 
   <div class="main-chat-display">
-    <h1>It's your turn now Ahmed! :P</h1>
+    <h1><img src="" id="displayphoto" style="height: 200px;width: 200px;" /> <span id="displayname"></span></h1>
     <div class="container">
       <div class="row">
           <div class="col-sm-12" style="background: #ff0;"><p style="text-align:center;">This is a big row!</p></div>
@@ -95,13 +100,6 @@
       </div>
       <div class="row">
         <div class="col-sm-4">
-          <button type="button" class="btn-block">Button 1</button>
-        </div>
-        <div class="col-sm-4">
-          <button type="button" class="btn-block btn-lg">Button 2</button>
-        </div>
-        <div class="col-sm-4">
-          <button type="button" class="btn-block">Button 3</button>
         </div>
       </div>
     </div>
@@ -114,12 +112,45 @@
     var string = $("#robstring").html();
     //alert(string);
 
+    // function handleFileSelect(evt) {
+    //   var f = evt.target.files[0];
+    //   var reader = new FileReader();
+    //   reader.onload = (function(theFile) {
+    //     return function(e) {
+    //       var filePayload = e.target.result;
+    //       // Generate a location that can't be guessed using the file's contents and a random number
+    //       var hash = CryptoJS.SHA256(Math.random() + CryptoJS.SHA256(filePayload));
+    //       var f = new Firebase(firebaseRef + 'photos/' + hash + '/filePayload');
+    //       // Set the file payload to Firebase and register an onComplete handler to stop the spinner and show the preview
+    //       f.set(filePayload, function() { 
+    //         document.getElementById("pano").src = e.target.result;
+    //         $('#file-upload').hide();
+    //         // Update the location bar so the URL can be shared with others
+    //         window.location.hash = hash;
+    //       });
+    //     };
+    //   })(f);
+    //   reader.readAsDataURL(f);
+    // }
+
+
     var formattedString = string.replace(/(?:(?:ht|f)tp(?:s?)\:\/\/|~\/|\/)?(?:\w+:\w+@)?((?:(?:[-\w\d{1-3}]+\.)+(?:com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|edu|co\.uk|ac\.uk|it|fr|tv|museum|asia|local|travel|[a-z]{2}))|((\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)(\.(\b25[0-5]\b|\b[2][0-4][0-9]\b|\b[0-1]?[0-9]?[0-9]\b)){3}))(?::[\d]{1,5})?(?:(?:(?:\/(?:[-\w~!$+|.,=]|%[a-f\d]{2})+)+|\/)+|\?|#)?(?:(?:\?(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)(?:&(?:[-\w~!$+|.,*:]|%[a-f\d{2}])+=?(?:[-\w~!$+|.,*:=]|%[a-f\d]{2})*)*)*(?:#(?:[-\w~!$ |\/.,*:;=]|%[a-f\d]{2})*)?/ig, "<a href='http://$1'>$1</a>");
 
     //alert(formattedString);
     $("#robstring").html(formattedString);
 
     $(document).ready(function() {
+
+      function authDataCallback(authData) {
+        if (authData) {
+          alert("User " + authData.uid + " is logged in with " + authData.provider);
+          console.log("User " + authData.uid + " is logged in with " + authData.provider);
+        } else {
+          console.log("User is logged out");
+        }
+      }
+
+      myDataRef.onAuth(authDataCallback);
       
       $("#register-display-button").click(function() {
         $(".main-chat-login").hide();
@@ -149,7 +180,8 @@
               var user = snapshot.val();
 
               for (var key in user) {
-                alert("Hey "+user[key].name+"!"); 
+                $("#displayname").html(user[key].name);
+                document.getElementById("displayphoto").src = user[key].photo;
               } 
             });            
 
@@ -173,20 +205,39 @@
           } else {
             console.log("Successfully created user account with uid:", userData.uid);
 
-            myDataRef.child('user').child(userData.uid).push({id:userData.uid, email:email, name:name}); 
+            var photoinput = document.getElementById('photo');
+            var f = photoinput.files[0];
+            var reader = new FileReader();
+            reader.onload = (function(theFile) {
+              return function(e) {
+                var filePayload = e.target.result;
+                // Generate a location that can't be guessed using the file's contents and a random number
+                //var hash = CryptoJS.SHA256(Math.random() + CryptoJS.SHA256(filePayload));
+                var firebasephoto = new Firebase(myDataRef + 'photos/' + userData.uid + '/filePayload');
+                // Set the file payload to Firebase and register an onComplete handler to stop the spinner and show the preview
+                firebasephoto.set(filePayload, function() { 
 
-            myDataRef.authWithPassword({
-              email    : email,
-              password : password
-            }, function(error, authData) {
-              if (error) {
-                console.log("Login Failed!", error);
-              } else {
-                console.log("Authenticated successfully with payload:", authData);
-                $(".main-chat-register").hide();
-                $(".main-chat-display").show();
-              }
-            });
+                  myDataRef.child('user').child(userData.uid).push({id:userData.uid, email:email, name:name, photo:e.target.result}); 
+
+                  myDataRef.authWithPassword({
+                    email    : email,
+                    password : password
+                  }, function(error, authData) {
+                    if (error) {
+                      console.log("Login Failed!", error);
+                    } else {
+                      console.log("Authenticated successfully with payload:", authData);
+                      $(".main-chat-register").hide();
+                      $(".main-chat-display").show();
+                    }
+                  });
+                  
+                });
+              };
+            })(f);
+            reader.readAsDataURL(f);
+
+            
           }
         });
       });
